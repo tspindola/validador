@@ -6,22 +6,13 @@ import com.telpo.tps550.api.nfc.Nfc
 import com.telpo.tps550.api.reader.SmartCardReader
 import io.reactivex.Single
 
-class SerialDeviceManager{
-    private lateinit var nfc: Nfc
-    private lateinit var reader: SmartCardReader
-    private val slotSAM = 1
+class SerialDeviceManager(ctx: Activity){
+    private val slotSAM = 0
+    private val slotPSAM = 1
     private val slotNFC = 5
     private val HEX_CHARS = "0123456789ABCDEF"
-
-
-    companion object Factory{
-        fun create(ctx: Activity):SerialDeviceManager{
-            val ret = SerialDeviceManager()
-            ret.nfc = Nfc(ctx)
-            ret.reader = SmartCardReader(ctx, ret.slotSAM)
-            return ret
-        }
-    }
+    private val nfc = Nfc(ctx)
+    private val reader = SmartCardReader(ctx,slotSAM)
 
     fun open(){
         val disposable = Single.create<Boolean> { emitter ->
@@ -45,11 +36,13 @@ class SerialDeviceManager{
     }
 
     private fun openNFC(){
+        Log.d("READER_LIB", "Opening NFC")
         nfc.open()
         reader.iccPowerOn()
     }
 
     private fun closeNFC(){
+        Log.d("READER_LIB", "Closing NFC")
         nfc.close()
         reader.iccPowerOff()
     }
@@ -64,7 +57,7 @@ class SerialDeviceManager{
     }
 
     private fun sendCommandToSAM(slot: Int, apdu: ByteArray):ByteArray{
-        return if (slotSAM == slot) {
+        return if (slotPSAM == slot) {
             reader.transmit(apdu)
         } else {
             nfc.transmit(apdu, apdu.size)
