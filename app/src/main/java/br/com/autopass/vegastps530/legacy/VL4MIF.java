@@ -1,12 +1,12 @@
-package br.com.autopass.vegastps530;
+package br.com.autopass.vegastps530.legacy;
 
-public class VL4MIF extends CWRAPPER
-{
-    class MIFARE_KEY
-    {
+public class VL4MIF extends CWRAPPER {
+    class MIFARE_KEY {
         byte keyType;
         byte[] key = new byte[6];
-    };
+    }
+
+    ;
 
     byte cl_on;
 
@@ -16,13 +16,11 @@ public class VL4MIF extends CWRAPPER
     byte[] keyL; // a key for the last command.
     VSC_COMM comm;
 
-    public VL4MIF(VSC_COMM comm)
-    {
+    public VL4MIF(VSC_COMM comm) {
         pApdu = new byte[CONST.SIZE_BUFFER];
         pAnswer = new byte[CONST.SIZE_BUFFER];
         keyS = new MIFARE_KEY[CONST.MAX_NUM_KEYS];
-        for (int i = 0; i < keyS.length; i++)
-        {
+        for (int i = 0; i < keyS.length; i++) {
             keyS[i] = new MIFARE_KEY();
         }
         keyL = new byte[6];
@@ -30,8 +28,7 @@ public class VL4MIF extends CWRAPPER
         this.comm = comm;
     }
 
-    int VL4MIF_Open(byte[] atq_sak, byte szUID, byte[] uid, byte[] fid, byte[] ltc)
-    {
+    public int VL4MIF_Open(byte[] atq_sak, byte szUID, byte[] uid, byte[] fid, byte[] ltc) {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer;
         int rc;
@@ -54,10 +51,10 @@ public class VL4MIF extends CWRAPPER
         pApdu[3] = (byte) 0x00;
         pApdu[4] = (byte) 0x38;
         rc = comm.VL_ScardTransmit(CONST.SAM_DEVICE_ID, pApdu, 5, pAnswer, sw);
-        if(rc < 0) return rc;
+        if (rc < 0) return rc;
 
         byte[] _ltc = new byte[3];
-        for(int i=0;i<3;i++) _ltc[i]=pAnswer[22+19+i]; // to get the newest data
+        for (int i = 0; i < 3; i++) _ltc[i] = pAnswer[22 + 19 + i]; // to get the newest data
         memcpy(ltc, _ltc, ltc.length);
 
         szApdu = 0;
@@ -71,8 +68,7 @@ public class VL4MIF extends CWRAPPER
         memcpy(pApdu, szApdu, atq_sak, 3);
         szApdu += 3;
         if (uid != null) memcpy(pApdu, szApdu, uid, szUID);
-        else
-        {
+        else {
             pApdu[CONST.P2_OFS] = (byte) 0x00; // CARD NOT PRESENT
             memset(pApdu, szApdu, (byte) 0x00, szUID);
         }
@@ -84,11 +80,9 @@ public class VL4MIF extends CWRAPPER
         szAnswer = (byte) rc;
         // memset(VL4MIF_CONST.VIRTUAL_KAUTH, 0x00, sizeof(VL4MIF_CONST.VIRTUAL_KAUTH));
         // // INIT THE KEY AUTH.
-        if (rc >= 0)
-        {
+        if (rc >= 0) {
             if (!memcmp(CONST.SW_OK, sw, sizeof(CONST.SW_OK))) return CONST.OK;
-            if (sw[0] == (byte) 0x90 && sw[1] == (byte) 0x90)
-            {
+            if (sw[0] == (byte) 0x90 && sw[1] == (byte) 0x90) {
                 memcpy(pApdu, CONST.SELECT_FILE, sizeof(CONST.SELECT_FILE));
                 szApdu = (byte) sizeof(CONST.SELECT_FILE);
                 szAnswer = (byte) sizeof(pAnswer);
@@ -102,22 +96,16 @@ public class VL4MIF extends CWRAPPER
             }
             if (sw[0] == (byte) 0x90) return sw[1]; // to reurn OK with SIZE ANSWER.
             return CONST.NOK;
-        }
-        else return rc;
+        } else return rc;
     }
 
-    int VL4MIF_LoadKey(byte[] key, byte keyType, byte keyIndex)
-    {
-        if (keyIndex < CONST.MAX_NUM_KEYS)
-        {
+    public int VL4MIF_LoadKey(byte[] key, byte keyType, byte keyIndex) {
+        if (keyIndex < CONST.MAX_NUM_KEYS) {
             memcpy(keyS[keyIndex].key, key, sizeof(keyS[keyIndex].key));
             keyS[keyIndex].keyType = keyType;
             return CONST.OK;
-        }
-        else
-        {
-            if (keyIndex == CONST.KEY_IMMEDIATE)
-            {
+        } else {
+            if (keyIndex == CONST.KEY_IMMEDIATE) {
                 memcpy(keyL, key, sizeof(keyL));
                 return CONST.OK;
             }
@@ -126,8 +114,7 @@ public class VL4MIF extends CWRAPPER
     }
 
     // If keyType==0xFF => NO KEY_TYPE USE KEY_TYPE DEFINED INSIDE THE KEY.
-    int VL4MIF_Authenticate(byte blockNr, byte keyType, byte keyIndex)
-    {
+    public int VL4MIF_Authenticate(byte blockNr, byte keyType, byte keyIndex) {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer, sectN;
         int rc;
@@ -147,10 +134,8 @@ public class VL4MIF extends CWRAPPER
 
         rc = comm.VL_ScardTransmit(CONST.CLV_DEVICE_ID, pApdu, szApdu, pAnswer, sw);
         szAnswer = (byte) rc;
-        if (rc >= 0)
-        {
-            if (!memcmp(CONST.SW_OK, sw, sizeof(CONST.SW_OK)))
-            {
+        if (rc >= 0) {
+            if (!memcmp(CONST.SW_OK, sw, sizeof(CONST.SW_OK))) {
                 /*
                  * if (szAnswer != 0 && (szAnswer <= sizeof(VL4MIF_CONST.VIRTUAL_KAUTH))) {
                  * memcpy(VL4MIF_CONST.VIRTUAL_KAUTH, pAnswer, szAnswer); }
@@ -158,12 +143,10 @@ public class VL4MIF extends CWRAPPER
                 return CONST.OK;
             }
             return CONST.NOK;
-        }
-        else return rc;
+        } else return rc;
     }
 
-    int VL4MIF_Read(byte blockNrS, byte nBlocks, byte[] data)
-    {
+    public int VL4MIF_Read(byte blockNrS, byte nBlocks, byte[] data) {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer;
         int rc;
@@ -176,20 +159,15 @@ public class VL4MIF extends CWRAPPER
         szAnswer = (byte) sizeof(pAnswer);
         rc = comm.VL_ScardTransmit(CONST.CLV_DEVICE_ID, pApdu, szApdu, pAnswer, sw);
         szAnswer = (byte) rc;
-        if (rc >= 0)
-        {
-            if (!memcmp(CONST.SW_OK, sw, sizeof(CONST.SW_OK)))
-            {
+        if (rc >= 0) {
+            if (!memcmp(CONST.SW_OK, sw, sizeof(CONST.SW_OK))) {
                 memcpy(data, pAnswer, nBlocks << 4);
                 return CONST.OK;
-            }
-            else return CONST.NOK;
-        }
-        else return rc;
+            } else return CONST.NOK;
+        } else return rc;
     }
 
-    int VL4MIF_Write(byte blockNrS, byte nBlocks, byte[] data)
-    {
+    public int VL4MIF_Write(byte blockNrS, byte nBlocks, byte[] data) {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer;
         int rc;
@@ -205,16 +183,13 @@ public class VL4MIF extends CWRAPPER
         szAnswer = (byte) sizeof(pAnswer);
         rc = comm.VL_ScardTransmit(CONST.CLV_DEVICE_ID, pApdu, szApdu, pAnswer, sw);
         szAnswer = (byte) rc;
-        if (rc >= 0)
-        {
+        if (rc >= 0) {
             if (!memcmp(CONST.SW_OK, sw, sizeof(CONST.SW_OK))) return CONST.OK;
             return CONST.NOK;
-        }
-        else return rc;
+        } else return rc;
     }
 
-    int VL4MIF_ValueTransfer(byte blockNrS, byte[] value, byte blockNrD)
-    {
+    public int VL4MIF_ValueTransfer(byte blockNrS, byte[] value, byte blockNrD) {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer;
         int rc;
@@ -229,18 +204,14 @@ public class VL4MIF extends CWRAPPER
         szAnswer = (byte) sizeof(pAnswer);
         rc = comm.VL_ScardTransmit(CONST.CLV_DEVICE_ID, pApdu, szApdu, pAnswer, sw);
         szAnswer = (byte) rc;
-        if (rc >= 0)
-        {
+        if (rc >= 0) {
             if (!memcmp(CONST.SW_OK, sw, sizeof(CONST.SW_OK)))
                 return CONST.OK;
-            else if(sw[0] == (byte)0x6B && sw[1] == (byte)0x41)
-            {
+            else if (sw[0] == (byte) 0x6B && sw[1] == (byte) 0x41) {
                 return CONST.NOK | 0x00FF00FF;
-            }
-            else
+            } else
                 return CONST.NOK;
-        }
-        else return rc;
+        } else return rc;
     }
 
 }

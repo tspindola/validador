@@ -1,4 +1,4 @@
-package br.com.autopass.vegastps530;
+package br.com.autopass.vegastps530.legacy;
 
 /*import com.imagpay.Settings;
 import com.imagpay.mpos.MposHandler;

@@ -1,4 +1,4 @@
-package br.com.autopass.vegastps530;
+package br.com.autopass.vegastps530.legacy;
 
 /*import com.imagpay.Apdu_Send;
 import com.imagpay.Settings;
