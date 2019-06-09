@@ -1,12 +1,10 @@
 package br.com.autopass.vegastps530
 
 import android.app.Activity
-import android.os.Handler
 import android.util.Log
 import com.telpo.tps550.api.TimeoutException
 import com.telpo.tps550.api.nfc.Nfc
 import com.telpo.tps550.api.reader.SmartCardReader
-import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -115,4 +113,5 @@ class SerialDeviceManager(ctx: Activity) {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe { readCard(ret) }
     }
+
 }
