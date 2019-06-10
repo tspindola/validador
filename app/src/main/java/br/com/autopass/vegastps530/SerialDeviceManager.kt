@@ -1,24 +1,22 @@
 package br.com.autopass.vegastps530
 
-import android.app.Activity
-import android.os.Handler
+import android.content.Context
 import android.util.Log
 import com.telpo.tps550.api.TimeoutException
 import com.telpo.tps550.api.nfc.Nfc
 import com.telpo.tps550.api.reader.SmartCardReader
-import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 
-class SerialDeviceManager(ctx: Activity) {
-    private val slotSAM = 0
-    private val slotPSAM = 1
-    private val slotNFC = 5
+class SerialDeviceManager private constructor(context: Context) {
+
+    companion object : SingletonHolder<SerialDeviceManager, Context>(::SerialDeviceManager)
+
     private val HEX_CHARS = "0123456789ABCDEF"
-    private val nfc = Nfc(ctx)
-    private val reader = SmartCardReader(ctx, slotSAM)
+    val nfc: Nfc = Nfc(context)
+    val reader: SmartCardReader = SmartCardReader(context)
 
     fun open() {
         val disposable = Single.create<Boolean> { emitter ->
@@ -53,8 +51,8 @@ class SerialDeviceManager(ctx: Activity) {
         reader.iccPowerOff()
     }
 
-    private fun resetDevice(slot: Int): ByteArray {
-        return if (slot == slotNFC) {
+    private fun resetDevice(device: DeviceSlot): ByteArray {
+        return if (device == DeviceSlot.NFC) {
             nfc.activate(50)
 
         } else {
