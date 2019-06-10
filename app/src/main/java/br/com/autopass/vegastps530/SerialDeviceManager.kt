@@ -62,8 +62,8 @@ class SerialDeviceManager(ctx: Activity) {
         }
     }
 
-    private fun sendCommandToSAM(slot: Int, apdu: ByteArray): ByteArray {
-        return if (slotPSAM == slot) {
+    fun sendCommandToSAM(device: DeviceSlot, apdu: ByteArray): ByteArray? {
+        return if (DeviceSlot.SAM == device) {
             reader.transmit(apdu)
         } else {
             nfc.transmit(apdu, apdu.size)
@@ -89,15 +89,14 @@ class SerialDeviceManager(ctx: Activity) {
         return result
     }
 
-    private fun readBalance(){
+    private fun readBalance() {
 
     }
 
     private fun readCard(b: Boolean) {
-        if(b){
+        if (b) {
 
-        }
-        else{
+        } else {
             Log.d("READER_LIB", "Waiting card")
         }
     }
