@@ -17,12 +17,12 @@ class SerialDeviceManager private constructor(context: Context) {
     private val HEX_CHARS = "0123456789ABCDEF"
     val nfc: Nfc = Nfc(context)
     val reader: SmartCardReader = SmartCardReader(context)
+    private val ctx = context
 
     fun open() {
         val disposable = Single.create<Boolean> { emitter ->
             val ret = openReader()
             emitter.onSuccess(ret)
-
         }
             .subscribe { t ->
                 if (t)
@@ -30,7 +30,6 @@ class SerialDeviceManager private constructor(context: Context) {
                 else
                     closeNFC()
             }
-
         disposable.dispose()
     }
 
@@ -87,13 +86,21 @@ class SerialDeviceManager private constructor(context: Context) {
         return result
     }
 
-    private fun readBalance() {
+    private fun readCardBalance():Int{
+        var cipurseId = ByteArray(6)
+        var cardCounter = ByteArray(4)
+        val cardmapping = CardMapping(ctx)
+        val ret = cardmapping.DebitCard(cipurseId,cardCounter)
 
+        //TODO: Tratamentos para erro: Usam uma variável global para tal, procurar outra solução
+
+        return ret
     }
 
     private fun readCard(b: Boolean) {
         if (b) {
-
+            val saldoAtual = readCardBalance()
+            Log.d("READER_LIB", "Cartão debitado: Saldo atual = $saldoAtual")
         } else {
             Log.d("READER_LIB", "Waiting card")
         }
