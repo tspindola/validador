@@ -30,7 +30,7 @@ public class VL4MIF extends CWRAPPER
         this.comm = comm;
     }
 
-    int VL4MIF_Open(byte[] atq_sak, byte szUID, byte[] uid, byte[] fid, byte[] ltc)
+    public int VL4MIF_Open(byte[] atq_sak, byte szUID, byte[] uid, byte[] fid, byte[] ltc)
     {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer;
@@ -106,7 +106,7 @@ public class VL4MIF extends CWRAPPER
         else return rc;
     }
 
-    int VL4MIF_LoadKey(byte[] key, byte keyType, byte keyIndex)
+    public int VL4MIF_LoadKey(byte[] key, byte keyType, byte keyIndex)
     {
         if (keyIndex < CONST.MAX_NUM_KEYS)
         {
@@ -126,7 +126,7 @@ public class VL4MIF extends CWRAPPER
     }
 
     // If keyType==0xFF => NO KEY_TYPE USE KEY_TYPE DEFINED INSIDE THE KEY.
-    int VL4MIF_Authenticate(byte blockNr, byte keyType, byte keyIndex)
+    public int VL4MIF_Authenticate(byte blockNr, byte keyType, byte keyIndex)
     {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer, sectN;
@@ -162,7 +162,7 @@ public class VL4MIF extends CWRAPPER
         else return rc;
     }
 
-    int VL4MIF_Read(byte blockNrS, byte nBlocks, byte[] data)
+    public int VL4MIF_Read(byte blockNrS, byte nBlocks, byte[] data)
     {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer;
@@ -188,7 +188,7 @@ public class VL4MIF extends CWRAPPER
         else return rc;
     }
 
-    int VL4MIF_Write(byte blockNrS, byte nBlocks, byte[] data)
+    public int VL4MIF_Write(byte blockNrS, byte nBlocks, byte[] data)
     {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer;
@@ -213,7 +213,7 @@ public class VL4MIF extends CWRAPPER
         else return rc;
     }
 
-    int VL4MIF_ValueTransfer(byte blockNrS, byte[] value, byte blockNrD)
+    public int VL4MIF_ValueTransfer(byte blockNrS, byte[] value, byte blockNrD)
     {
         byte[] sw = new byte[2];
         byte szApdu, szAnswer;
