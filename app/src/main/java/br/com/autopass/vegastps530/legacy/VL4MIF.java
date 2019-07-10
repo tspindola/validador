@@ -1,4 +1,4 @@
-package br.com.autopass.vegastps530;
+package br.com.autopass.vegastps530.legacy;
 
 public class VL4MIF extends CWRAPPER
 {

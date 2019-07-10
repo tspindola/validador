@@ -1,7 +1,9 @@
-package br.com.autopass.vegastps530;
+package br.com.autopass.vegastps530.legacy;
 
 import android.content.Context;
 import android.util.Log;
+import br.com.autopass.vegastps530.SerialDeviceManager;
+import br.com.autopass.vegastps530.utils.DeviceSlot;
 
 /**
  * Created by rafae on 03/04/2018.
@@ -38,8 +40,8 @@ public class VSC_ADPCOMM
         }
         byte[] sapdu = new byte[szApdu];
         System.arraycopy(apdu, 0, sapdu, 0, szApdu);
-        long _t1 = System.currentTimeMillis();
         SerialDeviceManager v = SerialDeviceManager.Companion.getInstance(ctx);
+        long _t1 = System.currentTimeMillis();
         byte[] ret = v.sendCommandToSAM(slot, sapdu);
         long _t2 = System.currentTimeMillis();
         Log.w("APDU_TIME", (_t2 - _t1) + "ms");

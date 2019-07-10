@@ -1,4 +1,4 @@
-package br.com.autopass.vegastps530;
+package br.com.autopass.vegastps530.legacy;
 
 /**
  * Created by rafae on 03/04/2018.

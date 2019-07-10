@@ -1,16 +1,9 @@
-package br.com.autopass.vegastps530;
-
-/*import com.imagpay.Settings;
-import com.imagpay.mpos.MposHandler;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;*/
-
+package br.com.autopass.vegastps530.legacy;
 import android.content.Context;
+import br.com.autopass.vegastps530.legacy.CONST;
+import br.com.autopass.vegastps530.legacy.CWRAPPER;
+import br.com.autopass.vegastps530.legacy.VSC_ADPCOMM;
 
-/**
- * Created by rafae on 03/04/2018.
- */
 
 public class VSC_COMM extends CWRAPPER
 {

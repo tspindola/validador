@@ -2,12 +2,15 @@ package br.com.autopass.vegastps530
 
 import android.content.Context
 import android.util.Log
+import br.com.autopass.vegastps530.utils.DeviceSlot
+import br.com.autopass.vegastps530.utils.SingletonHolder
 import com.telpo.tps550.api.TimeoutException
 import com.telpo.tps550.api.nfc.Nfc
 import com.telpo.tps550.api.reader.SmartCardReader
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 
 class SerialDeviceManager private constructor(context: Context) {
@@ -15,9 +18,10 @@ class SerialDeviceManager private constructor(context: Context) {
     companion object : SingletonHolder<SerialDeviceManager, Context>(::SerialDeviceManager)
 
     private val HEX_CHARS = "0123456789ABCDEF"
-    val nfc: Nfc = Nfc(context)
-    val reader: SmartCardReader = SmartCardReader(context)
-    private val ctx = context
+    private val nfc: Nfc = Nfc(context)
+    private val reader: SmartCardReader = SmartCardReader(context)
+    private lateinit var disposable: Disposable
+    var listener: (()->Unit)? = null
 
     fun open() {
         val disposable = Single.create<Boolean> { emitter ->
@@ -36,6 +40,11 @@ class SerialDeviceManager private constructor(context: Context) {
     private fun openReader(): Boolean {
         Log.d("READER_LIB", "Opening reader")
         return reader.open()
+    }
+
+    private fun closeReader(){
+        Log.d("READER_LIB", "Closing reader")
+        reader.close()
     }
 
     private fun openNFC() {
@@ -69,7 +78,7 @@ class SerialDeviceManager private constructor(context: Context) {
 
     private fun isCardPresent(): Boolean {
         val nfcData = nfc.activate(30)
-        return (nfcData != null && nfcData.size >= 6)
+        return nfcData != null && nfcData.size >= 6
     }
 
     fun String.hexStringToByteArray(): ByteArray {
@@ -86,29 +95,18 @@ class SerialDeviceManager private constructor(context: Context) {
         return result
     }
 
-    private fun readCardBalance():Int{
-        var cipurseId = ByteArray(6)
-        var cardCounter = ByteArray(4)
-        val cardmapping = CardMapping(ctx)
-        val ret = cardmapping.DebitCard(cipurseId,cardCounter)
-
-        //TODO: Tratamentos para erro: Usam uma variável global para tal, procurar outra solução
-
-        return ret
-    }
-
     private fun readCard(b: Boolean) {
         if (b) {
-            val saldoAtual = readCardBalance()
-            Log.d("READER_LIB", "Cartão debitado: Saldo atual = $saldoAtual")
+            listener?.invoke()
+            disposable.dispose()
         } else {
             Log.d("READER_LIB", "Waiting card")
         }
     }
 
-    fun reader() {
+    fun startReading() {
         var ret = false
-        val disposable = Observable.fromCallable {
+        disposable = Observable.fromCallable {
             try {
                 ret = isCardPresent()
             } catch (t: TimeoutException) {
@@ -118,5 +116,37 @@ class SerialDeviceManager private constructor(context: Context) {
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe { readCard(ret) }
+    }
+
+    fun restartReading(){
+        waitCardRemove(1000)
+        resetDevice(DeviceSlot.NFC)
+        resetDevice(DeviceSlot.SAM)
+        startReading()
+    }
+
+    private fun waitCardRemove(retries:Int){
+        for(i in 1..retries){
+            if(isCardStillPresent()){
+                Log.d("READER_LIB", "Card still present")
+                Thread.sleep(1)
+            }
+            else return
+        }
+    }
+
+    private fun isCardStillPresent():Boolean{
+        val apdu = byteArrayOf(0x00,0xA4.toByte(),0x00,0x0C,0x02,0x03,0xFF.toByte())
+        val resp = sendCommandToSAM(DeviceSlot.NFC,apdu)
+        val ret:Boolean
+        if(resp == null || resp.size<=2){
+            closeNFC()
+            closeReader()
+            openReader()
+            openNFC()
+            ret = false
+        }
+        else ret = true
+        return ret
     }
 }

@@ -1,4 +1,4 @@
-package br.com.autopass.vegastps530
+package br.com.autopass.vegastps530.utils
 
 enum class DeviceSlot(val deviceId: Byte, val slot: Int) {
     OTHER(0x00,-1),

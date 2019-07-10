@@ -1,4 +1,4 @@
-package br.com.autopass.vegastps530
+package br.com.autopass.vegastps530.utils
 
 open class SingletonHolder<out T, in A>(private val constructor: (A) -> T) {
 
