@@ -4,6 +4,8 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import br.com.autopass.vegastps530.cardblocks.InfoBlock
+import br.com.autopass.vegastps530.cardblocks.PurseInfoBlock
+import br.com.autopass.vegastps530.cardblocks.WalletBlock
 
 class MainActivity : AppCompatActivity() {
     private val device = SerialDeviceManager.getInstance(this)
@@ -16,20 +18,26 @@ class MainActivity : AppCompatActivity() {
         device.startReading()
 
         device.listener = {
-            val issuer = readCardBalance()
+            Log.d("READER_LIB", "Found card!")
+            val ret = device.getSerialNo()
+            val issuer = readCardBalance(ret)
             Log.d("READER_LIB", "Issuer = $issuer")
             device.restartReading()
         }
     }
 
-    private fun readCardBalance():Int{
-        val cardFunctions = CardFunctions(this)
-        val infoBlock = InfoBlock("1111111100000000111111110000000011111111".padEnd(128,'0'))
+    private fun readCardBalance(serial: ByteArray):Int{
+        val cardFunctions = CardFunctions(this,serial)
+        val purseblock = PurseInfoBlock("1111111100000000111111110000000011111111".padEnd(128,'0'))
         var ret:Int
-        ret = cardFunctions.writeInfoBlock(infoBlock)
+        ret = cardFunctions.writePurseInfo(1,purseblock)
         Log.d("READER_LIB", "Cartão gravado: retorno = $ret")
-        val block = cardFunctions.readInfoBlock()
-        ret = block.issuer
+        val block = cardFunctions.readPurseInfo(1)
+        ret = block.creditType
+        //val amountBlock = cardFunctions.readWalletBalance(1)
+        //Log.d("READER_LIB", "Cartão lido: Wallet Block: "+amountBlock.toBinaryString())
+        //amountBlock.walletAAmount = amountBlock.walletAAmount - 430
+        //cardFunctions.writeWalletBalance(1,amountBlock)
         return ret
     }
 }

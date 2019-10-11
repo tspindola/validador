@@ -1,6 +1,7 @@
 package br.com.autopass.vegastps530
 
 import android.content.Context
+import android.util.Log
 import br.com.autopass.vegastps530.cardblocks.*
 import br.com.autopass.vegastps530.legacy.CONST
 import br.com.autopass.vegastps530.legacy.VL4MIF
@@ -9,7 +10,7 @@ import br.com.autopass.vegastps530.utils.BinaryFunctions.blockStringToByteArray
 import br.com.autopass.vegastps530.utils.BinaryFunctions.byteArrayToBlockString
 import br.com.autopass.vegastps530.utils.Constants
 
-class CardFunctions(ctx: Context){
+class CardFunctions(ctx: Context, serial:ByteArray){
     private var comm = VSC_COMM(ctx)
     private var vl = VL4MIF(comm)
 
@@ -20,43 +21,41 @@ class CardFunctions(ctx: Context){
         val atqsak = byteArrayOf(0x00, 0x04, 0x028)
         val fid = byteArrayOf(0x03, 0x05)
         val samLtc = ByteArray(3)
-        val uid = ByteArray(6)
-
-        vl.VL4MIF_Open(atqsak, uid.size.toByte(), uid, fid, samLtc)
+        vl.VL4MIF_Open(atqsak, serial.size.toByte(), serial, fid, samLtc)
         vl.VL4MIF_LoadKey(key, keyType, keyIndex)
         vl.VL4MIF_Authenticate(0.toByte(), keyType, keyIndex)
     }
 
     fun readInfoBlock():InfoBlock{
-        return InfoBlock(readBlockFromCard(Constants.CARD_INFO_BLOCK))
+        return InfoBlock(readBlockFromCard(Constants.CARD_INFO_BLOCK,1))
     }
 
     fun writeInfoBlock(infoBlock: InfoBlock):Int{
-        return writeBlockToCard(infoBlock.toBinaryString(),Constants.CARD_INFO_BLOCK)
+        return writeBlockToCard(infoBlock.toBinaryString(),Constants.CARD_INFO_BLOCK,1)
     }
 
     fun readStatusBlock():StatusBlock{
-        return StatusBlock(readBlockFromCard(Constants.CARD_STATUS_BLOCK))
+        return StatusBlock(readBlockFromCard(Constants.CARD_STATUS_BLOCK,1))
     }
 
     fun writeStatusBlock(statusBlock: StatusBlock):Int{
-        return writeBlockToCard(statusBlock.toBinaryString(),Constants.CARD_STATUS_BLOCK)
+        return writeBlockToCard(statusBlock.toBinaryString(),Constants.CARD_STATUS_BLOCK,1)
     }
 
     fun readBitmapBlock():BitmapBlock{
-        return BitmapBlock(readBlockFromCard(Constants.CARD_BITMAP_BLOCK))
+        return BitmapBlock(readBlockFromCard(Constants.CARD_BITMAP_BLOCK,1))
     }
 
     fun writeBitmapBlock(bitmapBlock: StatusBlock):Int{
-        return writeBlockToCard(bitmapBlock.toBinaryString(),Constants.CARD_BITMAP_BLOCK)
+        return writeBlockToCard(bitmapBlock.toBinaryString(),Constants.CARD_BITMAP_BLOCK,1)
     }
 
     fun readIntegrationBlock():IntegrationBlock{
-        return IntegrationBlock(readBlockFromCard(Constants.INTEGRATIONS_BLOCK))
+        return IntegrationBlock(readBlockFromCard(Constants.INTEGRATIONS_BLOCK,1))
     }
 
     fun writeIntegrationBlock(integrationBlock:IntegrationBlock):Int{
-        return writeBlockToCard(integrationBlock.toBinaryString(),Constants.INTEGRATIONS_BLOCK)
+        return writeBlockToCard(integrationBlock.toBinaryString(),Constants.INTEGRATIONS_BLOCK,1)
     }
 
     fun readRechargeData(app: Int):RechargeBlock{
@@ -64,7 +63,7 @@ class CardFunctions(ctx: Context){
             2->Constants.APP2_RECHARGE_INFO
             else->Constants.APP1_RECHARGE_INFO
         }
-        return RechargeBlock(readBlockFromCard(block))
+        return RechargeBlock(readBlockFromCard(block,1))
     }
 
     fun writeRechargeData(app:Int, rechargeBlock: RechargeBlock):Int{
@@ -72,41 +71,25 @@ class CardFunctions(ctx: Context){
             2->Constants.APP2_RECHARGE_INFO
             else->Constants.APP1_RECHARGE_INFO
         }
-        return writeBlockToCard(rechargeBlock.toBinaryString(),block)
+        return writeBlockToCard(rechargeBlock.toBinaryString(),block,1)
     }
 
-    fun readOperationCounter(app: Int, isRecharge: Boolean):CounterBlock{
-        val block = when(app) {
-            2 -> if(isRecharge) Constants.APP2_RECHARGE_COUNTER else Constants.APP2_TRANSACTION_COUNTER
-            else -> if(isRecharge) Constants.APP1_RECHARGE_COUNTER else Constants.APP1_TRANSACTION_COUNTER
-        }
-        return CounterBlock(readBlockFromCard(block))
-    }
 
-    //TODO: Recharge Count tem que ser get/set com increment only
-    fun writeOperationCounter(app:Int, isRecharge: Boolean, counterBlock: CounterBlock):Int{
+    fun readWalletBalance(app:Int):WalletBlock{
         val block = when(app) {
-            2 -> if(isRecharge) Constants.APP2_RECHARGE_COUNTER else Constants.APP2_TRANSACTION_COUNTER
-            else -> if(isRecharge) Constants.APP1_RECHARGE_COUNTER else Constants.APP1_TRANSACTION_COUNTER
+            2 -> Constants.APP2_WALLET_INFO
+            else -> Constants.APP1_WALLET_INFO
         }
-        return writeBlockToCard(counterBlock.toBinaryString(),block)
-    }
-
-    fun readWalletBalance(app:Int,isWalletA: Boolean):WalletBlock{
-        val block = when(app) {
-            2 -> if (isWalletA) Constants.APP2_WALLET_A_BALANCE else Constants.APP2_WALLET_B_BALANCE
-            else -> if (isWalletA) Constants.APP1_WALLET_A_BALANCE else Constants.APP1_WALLET_B_BALANCE
-        }
-        return WalletBlock(readBlockFromCard(block))
+        return WalletBlock(readBlockFromCard(block,2))
     }
 
     //TODO: Wallet Balance tem que usar Value block
-    fun writeWalletBalance(app:Int, isWalletA:Boolean, walletBlock: WalletBlock):Int{
+    fun writeWalletBalance(app:Int, walletBlock: WalletBlock):Int{
         val block = when(app) {
-            2 -> if (isWalletA) Constants.APP2_WALLET_A_BALANCE else Constants.APP2_WALLET_B_BALANCE
-            else -> if (isWalletA) Constants.APP1_WALLET_A_BALANCE else Constants.APP1_WALLET_B_BALANCE
+            2 ->  Constants.APP2_WALLET_INFO
+            else -> Constants.APP1_WALLET_INFO
         }
-        return writeBlockToCard(walletBlock.toBinaryString(),block)
+        return writeBlockToCard(walletBlock.toBinaryString(),block,2)
     }
 
     fun readPurseInfo(app:Int):PurseInfoBlock{
@@ -114,7 +97,7 @@ class CardFunctions(ctx: Context){
             2->Constants.APP2_INFO
             else->Constants.APP1_INFO
         }
-        return PurseInfoBlock(readBlockFromCard(block))
+        return PurseInfoBlock(readBlockFromCard(block,1))
     }
 
     fun writePurseInfo(app: Int,purseInfoBlock: PurseInfoBlock):Int{
@@ -122,7 +105,7 @@ class CardFunctions(ctx: Context){
             2->Constants.APP2_INFO
             else->Constants.APP1_INFO
         }
-        return writeBlockToCard(purseInfoBlock.toBinaryString(),block)
+        return writeBlockToCard(purseInfoBlock.toBinaryString(),block,1)
     }
 
     private fun commitChangesToCard(certificate: ByteArray): Int {
@@ -143,17 +126,21 @@ class CardFunctions(ctx: Context){
         return ret
     }
 
-    private fun writeBlockToCard(value:String,block:Byte):Int{
-        val blockBytes = blockStringToByteArray(value)
-        return vl.VL4MIF_Write(block,1,blockBytes)
+    private fun writeBlockToCard(value:String,block:Byte, blocksize: Int):Int{
+        val blockBytes = blockStringToByteArray(value, blocksize)
+        return vl.VL4MIF_Write(block,blocksize.toByte(),blockBytes)
     }
 
-    private fun readBlockFromCard(block:Byte):String{
+    private fun readBlockFromCard(block:Byte, blocksize: Int):String{
         var ret = ""
-        var blockBytes = ByteArray(16)
-        val result = vl.VL4MIF_Read(block,1,blockBytes)
+        var blockBytes = ByteArray(16*blocksize)
+        val result = vl.VL4MIF_Read(block,blocksize.toByte(),blockBytes)
+        Log.d("READER_LIB", "Read block $block. Result: $result")
         if(result>=0){
-            ret = byteArrayToBlockString(blockBytes)
+            ret = byteArrayToBlockString(blockBytes,blocksize)
+        }
+        else{
+            ret = ret.padEnd(128,'0')
         }
         return ret
     }

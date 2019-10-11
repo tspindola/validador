@@ -18,15 +18,16 @@ fun IntegrationBlock(s:String):IntegrationBlock{
     val totalAmount = binaryStringToInt(s.substring(55,69))
     val startDate = dateFromJulianDate(s.substring(69,85))
     val startTime = binaryStringToInt(s.substring(85,96))
+    val dailyUsage = binaryStringToInt(s.substring(96,104))
 
     return IntegrationBlock(originApp, timeLimit, modalCode, direction, lineCode, groupLineCode, feeCode,
-        transactionCount, totalAmount, startDate, startTime)
+        transactionCount, totalAmount, startDate, startTime, dailyUsage)
 }
 
 class IntegrationBlock(val originApp:Int, val timeLimit:Int, val modalCode:Int,
                        val direction:Int, val lineCode:Int, val groupLineCode:Int,
                        val feeCode:Int, val transactionCount:Int, val totalAmount:Int,
-                       val startDate: LocalDate, val startTime:Int): CardBlockInterface{
+                       val startDate: LocalDate, val startTime:Int, val dailyUsage: Int): CardBlockInterface{
 
     override fun toBinaryString():String{
         return intToPaddedBinaryString(originApp,4)+
@@ -39,6 +40,7 @@ class IntegrationBlock(val originApp:Int, val timeLimit:Int, val modalCode:Int,
                 intToPaddedBinaryString(transactionCount,4)+
                 intToPaddedBinaryString(totalAmount,14)+
                 dateToJulianDate(startDate)+
-                intToPaddedBinaryString(startTime,11)
+                intToPaddedBinaryString(startTime,11) +
+                intToPaddedBinaryString(dailyUsage,8)
     }
 }

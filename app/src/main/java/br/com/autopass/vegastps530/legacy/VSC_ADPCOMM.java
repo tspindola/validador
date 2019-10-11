@@ -42,7 +42,9 @@ public class VSC_ADPCOMM
         System.arraycopy(apdu, 0, sapdu, 0, szApdu);
         SerialDeviceManager v = SerialDeviceManager.Companion.getInstance(ctx);
         long _t1 = System.currentTimeMillis();
+        Log.d("APDU_STRING", "Apdu: "+ bytesToHex(sapdu));
         byte[] ret = v.sendCommandToSAM(slot, sapdu);
+        Log.d("APDU_STRING", "Apdu: "+ bytesToHex(ret));
         long _t2 = System.currentTimeMillis();
         Log.w("APDU_TIME", (_t2 - _t1) + "ms");
         if(ret == null) return -1;
@@ -54,5 +56,15 @@ public class VSC_ADPCOMM
         return sz - 2;
     }
 
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
 
 }

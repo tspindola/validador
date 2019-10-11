@@ -34,10 +34,10 @@ object BinaryFunctions{
     }
 
     @JvmStatic
-    fun blockStringToByteArray(block:String):ByteArray{
+    fun blockStringToByteArray(block:String, blocksize: Int):ByteArray{
         val formattedString = block.padEnd(128,'0')
-        val blockByteArray = ByteArray(16)
-        for(i in 0..15){
+        val blockByteArray = ByteArray(16*blocksize)
+        for(i in 0 until 16*blocksize){
             val byteString = formattedString.substring(8*i,8*(i+1))
             blockByteArray[i] = Integer.parseInt(byteString,2).toByte()
         }
@@ -45,10 +45,10 @@ object BinaryFunctions{
     }
 
     @JvmStatic
-    fun byteArrayToBlockString(array:ByteArray):String{
+    fun byteArrayToBlockString(array:ByteArray, blocksize: Int):String{
         var ret = ""
-        if(array.size == 16) {
-            for (i in 0..15) {
+        if(array.size == 16*blocksize) {
+            for (i in 0 until 16*blocksize) {
                 var a = array[i].toInt()
                 if(a<0) a += 256
                 ret += String.format("%8s", Integer.toBinaryString(a)).replace(' ', '0')

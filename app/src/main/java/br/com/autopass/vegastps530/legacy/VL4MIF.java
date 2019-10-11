@@ -188,6 +188,22 @@ public class VL4MIF extends CWRAPPER
         else return rc;
     }
 
+    public byte[] VL4MIF_ReadCardSerialNumber()
+    {
+        byte [] resp = new byte[4];
+        byte [] sw = new byte[2];
+        byte[] apdu = new byte[] {0x00, (byte)0xA4,0x00, 0, 2, (byte)0x2F, (byte) 0xF7};
+        int rc = comm.VL_ScardTransmit(CONST.CLD_DEVICE_ID, apdu, 7, pAnswer, sw);
+        if (rc >= 0)
+        {
+            if (!memcmp(CONST.SW_OK, sw, sizeof(CONST.SW_OK))) {
+                System.arraycopy(pAnswer, 17, resp, 0, 4);
+                return resp;
+            }
+        }
+        return new byte[0];
+    }
+
     public int VL4MIF_Write(byte blockNrS, byte nBlocks, byte[] data)
     {
         byte[] sw = new byte[2];

@@ -81,6 +81,15 @@ class SerialDeviceManager private constructor(context: Context) {
         return nfcData != null && nfcData.size >= 6
     }
 
+    fun getSerialNo(): ByteArray{
+        val full = nfc.activate(30)
+        var ret:ByteArray = byteArrayOf()
+        if(full != null && full.size >= 5){
+            ret = full.copyOfRange(6,6+full[5])
+        }
+        return ret
+    }
+
     fun String.hexStringToByteArray(): ByteArray {
 
         val result = ByteArray(length / 2)
