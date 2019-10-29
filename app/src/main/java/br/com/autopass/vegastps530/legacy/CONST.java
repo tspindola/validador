@@ -10,10 +10,10 @@ public class CONST
     public static final byte P3_OFS = 4; // CLA OFFSET INSIDE APUD
     public static final byte DATA_OFS = 5; // CLA OFFSET INSIDE APUD
 
-    public static final short SAM_DEVICE_ID = 0x10;
-    public static final short CLD_DEVICE_ID = 0x20;
-    public static final short CARD_DEVICE_ID = 0x30;
-    public static final short CLV_DEVICE_ID = (short) ((CLD_DEVICE_ID << 8) | SAM_DEVICE_ID);
+    public static final short SAM_DEVICE_ID = 1;
+    public static final short CLD_DEVICE_ID = 0;
+    public static final short CARD_DEVICE_ID = 0;
+    public static final short CLV_DEVICE_ID = 1;
 
     public static final byte VIRTUAL_OPEN = 0x00; // P1, P2=(DMD DEFINITION= )
     public static final byte VIRTUAL_CLOSE = 0x0F; // P1, P2=0x80 = FLUSH

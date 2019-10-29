@@ -51,13 +51,19 @@ class SerialDeviceManager private constructor(context: Context) {
                     device = currentDevice
                     reader = Reader(context)
                     comm = VSC_COMM(context)
+                    resetSam()
                 }
             }
         }
     }
 
+    private fun resetSam(){
+        val ret = comm!!.newSCardTransmit(DeviceSlot.SAM.slot.toShort(), APDUs.SAM_ATR)
+        Log.d("READER_LIB", "Reset SAM ret = ${ret.toHexString()}, size = ${ret.size}")
+    }
+
     private fun waitCard() {
-        val ret = comm!!.newSCardTransmit(0, APDUs.ATR)
+        val ret = comm!!.newSCardTransmit(DeviceSlot.CARD.slot.toShort(), APDUs.ATR)
         Log.d("READER_LIB", "Wait card ret = ${ret.toHexString()}, size = ${ret.size}")
         if (ret.size >= 5) {
             isCardPresent = true
@@ -68,10 +74,10 @@ class SerialDeviceManager private constructor(context: Context) {
     }
 
     fun readCardSerialNumber(): ByteArray {
-        var answer = comm!!.newSCardTransmit(0, APDUs.SELECT_FILE_2FF7)
+        var answer = comm!!.newSCardTransmit(DeviceSlot.CARD.slot.toShort(), APDUs.SELECT_FILE_2FF7)
         Log.d("READER_LIB", "Select file 2FF7 answer = ${answer.toHexString()}")
         if (isAnswerOk(answer)){
-            answer = comm!!.newSCardTransmit(0, APDUs.READ_FILE)
+            answer = comm!!.newSCardTransmit(DeviceSlot.CARD.slot.toShort(), APDUs.READ_FILE)
             Log.d("READER_LIB", "Read file 2FF7 answer = ${answer.toHexString()}")
             if(isAnswerOk(answer)){
                 val resp = ByteArray(4)
@@ -101,13 +107,13 @@ class SerialDeviceManager private constructor(context: Context) {
     }
 
     fun startReading() {
-        disposable = Observable.timer(100, TimeUnit.MILLISECONDS)
+        disposable = Observable.timer(200, TimeUnit.MILLISECONDS)
             .subscribeOn(Schedulers.newThread())
             .observeOn(AndroidSchedulers.mainThread())
             .repeat()
             .subscribe{
                 if(!isCardPresent) {
-                    Log.d("READER_LIB", "Aguardando cartão...")
+                    //Log.d("READER_LIB", "Aguardando cartão...")
                     waitCard()
                 }
                 else{
@@ -118,7 +124,7 @@ class SerialDeviceManager private constructor(context: Context) {
 
     fun waitCardRemove(){
         while (true) {
-            val answer = comm!!.newSCardTransmit(0, APDUs.WAIT_REMOVE)
+            val answer = comm!!.newSCardTransmit(DeviceSlot.CARD.slot.toShort(), APDUs.WAIT_REMOVE)
             Log.d("READER_LIB", "Esperando cartão ser removido. Ret = ${answer.toHexString()} size = ${answer.size}")
             if (answer.size <= 2) {
                 isCardPresent = false
@@ -126,7 +132,7 @@ class SerialDeviceManager private constructor(context: Context) {
                 return
             }
             try {
-                Thread.sleep(20)
+                Thread.sleep(200)
             } catch (e: InterruptedException) {
                 e.printStackTrace()
             }

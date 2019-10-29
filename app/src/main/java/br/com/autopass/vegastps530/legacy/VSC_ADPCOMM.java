@@ -12,9 +12,9 @@ import br.inf.planeta.Reader;
 
 public class VSC_ADPCOMM
 {
-    public final short SAM_DEVICE_ID	=	0x10;
-    public final short CLD_DEVICE_ID	=	0x20;
-    public final short CARD_DEVICE_ID =	0x30;
+    public final short SAM_DEVICE_ID	=	1;
+    public final short CLD_DEVICE_ID	=	0;
+    public final short CARD_DEVICE_ID =	-1;
 
     Context ctx;
 
@@ -46,7 +46,7 @@ public class VSC_ADPCOMM
         Reader reader = v.getCardReader();
         if(reader == null) return -1;
         long _t1 = System.currentTimeMillis();
-        Log.d("APDU_STRING", "Apdu: "+ bytesToHex(sapdu));
+        Log.d("APDU_STRING", "Slot = "+ slot.getSlot() + " Apdu: "+ bytesToHex(sapdu));
         byte[] ret = reader.SCardTransmit(slot.getSlot(), sapdu);
         Log.d("APDU_STRING", "Apdu: "+ bytesToHex(ret));
         long _t2 = System.currentTimeMillis();

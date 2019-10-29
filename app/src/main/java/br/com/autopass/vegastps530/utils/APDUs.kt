@@ -2,6 +2,7 @@ package br.com.autopass.vegastps530.utils
 
 object APDUs{
     val ATR = byteArrayOf(0xFF.toByte(), 0xCA.toByte(), 0xE1.toByte(), 0, 0)
+    val SAM_ATR = byteArrayOf(0xFF.toByte(), 0xCA.toByte(), 0xE1.toByte(), 0, 0, 0x97.toByte(),0x03.toByte())
     val SELECT_FILE_2FF7 = byteArrayOf(0, 0xA4.toByte(),0,0, 0x02.toByte(), 0x2F.toByte(), 0xF7.toByte())
     val READ_FILE = byteArrayOf(0,0xB0.toByte(),0,0,0)
     val WAIT_REMOVE = byteArrayOf(0xFF.toByte(), 0xCA.toByte(), 0xE1.toByte(), 0, 0)
