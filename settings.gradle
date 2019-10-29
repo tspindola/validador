@@ -1,1 +1,1 @@
-include ':app'
+include ':app', ':VLib-release-1.0'

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 import br.com.autopass.vegastps530.SerialDeviceManager;
 import br.com.autopass.vegastps530.utils.DeviceSlot;
+import br.inf.planeta.Reader;
 
 /**
  * Created by rafae on 03/04/2018.
@@ -41,9 +42,12 @@ public class VSC_ADPCOMM
         byte[] sapdu = new byte[szApdu];
         System.arraycopy(apdu, 0, sapdu, 0, szApdu);
         SerialDeviceManager v = SerialDeviceManager.Companion.getInstance(ctx);
+        v.open(ctx);
         long _t1 = System.currentTimeMillis();
         Log.d("APDU_STRING", "Apdu: "+ bytesToHex(sapdu));
-        byte[] ret = v.sendCommandToSAM(slot, sapdu);
+        Reader reader = v.getCardReader();
+        if(reader == null) return -1;
+        byte[] ret = reader.SCardTransmit(slot.getSlot(), sapdu);
         Log.d("APDU_STRING", "Apdu: "+ bytesToHex(ret));
         long _t2 = System.currentTimeMillis();
         Log.w("APDU_TIME", (_t2 - _t1) + "ms");

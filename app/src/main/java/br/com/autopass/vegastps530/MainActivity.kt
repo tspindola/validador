@@ -3,9 +3,7 @@ package br.com.autopass.vegastps530
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import br.com.autopass.vegastps530.cardblocks.InfoBlock
 import br.com.autopass.vegastps530.cardblocks.PurseInfoBlock
-import br.com.autopass.vegastps530.cardblocks.WalletBlock
 
 class MainActivity : AppCompatActivity() {
     private val device = SerialDeviceManager.getInstance(this)
@@ -14,15 +12,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        device.open()
+        device.open(applicationContext)
+
         device.startReading()
 
         device.listener = {
-            Log.d("READER_LIB", "Found card!")
-            val ret = device.getSerialNo()
+            val ret = device.readCardSerialNumber()
             val issuer = readCardBalance(ret)
             Log.d("READER_LIB", "Issuer = $issuer")
-            device.restartReading()
+            device.waitCardRemove()
         }
     }
 

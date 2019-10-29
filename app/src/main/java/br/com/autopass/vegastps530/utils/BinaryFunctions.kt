@@ -61,5 +61,4 @@ object BinaryFunctions{
     fun binaryStringToInt(s:String):Int{
         return Integer.parseInt(s,2)
     }
-
 }

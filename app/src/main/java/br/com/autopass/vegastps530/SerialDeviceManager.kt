@@ -1,161 +1,144 @@
 package br.com.autopass.vegastps530
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
 import android.util.Log
+import br.com.autopass.vegastps530.utils.APDUs
 import br.com.autopass.vegastps530.utils.DeviceSlot
 import br.com.autopass.vegastps530.utils.SingletonHolder
+import br.com.autopass.vegastps530.utils.BinaryFunctions
+import br.inf.planeta.Reader
 import com.telpo.tps550.api.TimeoutException
-import com.telpo.tps550.api.nfc.Nfc
-import com.telpo.tps550.api.reader.SmartCardReader
 import io.reactivex.Observable
-import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import java.util.concurrent.TimeUnit
+
+private val ACTION_USB_PERMISSION = "br.com.autopass.USB_PERMISSION"
 
 class SerialDeviceManager private constructor(context: Context) {
 
     companion object : SingletonHolder<SerialDeviceManager, Context>(::SerialDeviceManager)
 
     private val HEX_CHARS = "0123456789ABCDEF"
-    private val nfc: Nfc = Nfc(context)
-    private val reader: SmartCardReader = SmartCardReader(context)
+    private var reader: Reader? = null
     private lateinit var disposable: Disposable
     var listener: (()->Unit)? = null
+    private var device: UsbDevice? = null
+    private var isCardPresent = false
 
-    fun open() {
-        val disposable = Single.create<Boolean> { emitter ->
-            val ret = openReader()
-            emitter.onSuccess(ret)
-        }
-            .subscribe { t ->
-                if (t)
-                    openNFC()
-                else
-                    closeNFC()
+    fun getCardReader():Reader?{
+        return reader
+    }
+
+    fun open(context: Context) {
+        if(device == null) {
+            val manager = context.getSystemService(Context.USB_SERVICE) as UsbManager
+            val deviceList = manager.deviceList
+            val iterator = deviceList.values.iterator()
+
+            while (iterator.hasNext()) {
+                val currentDevice = iterator.next()
+                val intent = PendingIntent.getBroadcast(context, 0, Intent(ACTION_USB_PERMISSION), 0)
+                manager.requestPermission(currentDevice, intent)
+
+                if (currentDevice.productId == 87 && currentDevice.vendorId == 2816) {
+                    device = currentDevice
+                    reader = Reader(context)
+                }
             }
-        disposable.dispose()
-    }
-
-    private fun openReader(): Boolean {
-        Log.d("READER_LIB", "Opening reader")
-        return reader.open()
-    }
-
-    private fun closeReader(){
-        Log.d("READER_LIB", "Closing reader")
-        reader.close()
-    }
-
-    private fun openNFC() {
-        Log.d("READER_LIB", "Opening NFC")
-        nfc.open()
-        reader.iccPowerOn()
-    }
-
-    private fun closeNFC() {
-        Log.d("READER_LIB", "Closing NFC")
-        nfc.close()
-        reader.iccPowerOff()
-    }
-
-    private fun resetDevice(device: DeviceSlot): ByteArray {
-        return if (device == DeviceSlot.NFC) {
-            nfc.activate(50)
-
-        } else {
-            reader.atrString.hexStringToByteArray()
         }
     }
 
-    fun sendCommandToSAM(device: DeviceSlot, apdu: ByteArray): ByteArray? {
-        return if (DeviceSlot.SAM == device) {
-            reader.transmit(apdu)
-        } else {
-            nfc.transmit(apdu, apdu.size)
+    private fun waitCard() {
+        val ret = reader!!.SCardTransmit(0, APDUs.ATR)
+        Log.d("READER_LIB", "ret = ${ret.toHexString()}, size = ${ret.size}")
+        if (ret.size >= 5) {
+            isCardPresent = true
+            val atq = ByteArray(3)
+            System.arraycopy(ret, 0, atq, 0, atq.size)
+            Log.d("READER_LIB", "Cartão detectado")
         }
     }
 
-    private fun isCardPresent(): Boolean {
-        val nfcData = nfc.activate(30)
-        return nfcData != null && nfcData.size >= 6
+    fun readCardSerialNumber(): ByteArray {
+        var answer = reader!!.SCardTransmit(0, APDUs.SELECT_FILE_2FF7)
+        Log.d("READER_LIB", "Select file 2FF7 answer = ${answer.toHexString()}")
+        if (isAnswerOk(answer)){
+            answer = reader!!.SCardTransmit(0, APDUs.READ_FILE)
+            Log.d("READER_LIB", "Read file 2FF7 answer = ${answer.toHexString()}")
+            if(isAnswerOk(answer)){
+                val resp = ByteArray(4)
+                System.arraycopy(answer, 17, resp, 0, 4)
+                return resp
+            }
+        }
+        return ByteArray(0)
     }
 
-    fun getSerialNo(): ByteArray{
-        val full = nfc.activate(30)
-        var ret:ByteArray = byteArrayOf()
-        if(full != null && full.size >= 5){
-            ret = full.copyOfRange(6,6+full[5])
+    fun verifySW(array: ByteArray):String{
+        var ret = "0000"
+        if(array.size >= 2){
+            ret = array.copyOfRange(array.size-2,array.size).toHexString()
         }
         return ret
     }
 
+    private fun isAnswerOk(array: ByteArray):Boolean{
+        return verifySW(array) == "9000"
+    }
+
     fun String.hexStringToByteArray(): ByteArray {
-
         val result = ByteArray(length / 2)
-
         for (i in 0 until length step 2) {
             val firstIndex = HEX_CHARS.indexOf(this[i])
             val secondIndex = HEX_CHARS.indexOf(this[i + 1])
             val octet = firstIndex.shl(4).or(secondIndex)
             result[i.shr(1)] = octet.toByte()
         }
-
         return result
     }
 
-    private fun readCard(b: Boolean) {
-        if (b) {
-            listener?.invoke()
-            disposable.dispose()
-        } else {
-            Log.d("READER_LIB", "Waiting card")
+    fun ByteArray.toHexString() : String {
+        return this.joinToString("") {
+            java.lang.String.format("%02x", it)
         }
     }
 
     fun startReading() {
-        var ret = false
-        disposable = Observable.fromCallable {
-            try {
-                ret = isCardPresent()
-            } catch (t: TimeoutException) {
-            }
-        }
-            .repeatUntil { ret }
-            .subscribeOn(Schedulers.io())
+        disposable = Observable.timer(100, TimeUnit.MILLISECONDS)
+            .subscribeOn(Schedulers.newThread())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { readCard(ret) }
-    }
-
-    fun restartReading(){
-        waitCardRemove(1000)
-        resetDevice(DeviceSlot.NFC)
-        resetDevice(DeviceSlot.SAM)
-        startReading()
-    }
-
-    private fun waitCardRemove(retries:Int){
-        for(i in 1..retries){
-            if(isCardStillPresent()){
-                Log.d("READER_LIB", "Card still present")
-                Thread.sleep(1)
+            .repeat()
+            .subscribe{
+                if(!isCardPresent) {
+                    Log.d("READER_LIB", "Aguardando cartão...")
+                    waitCard()
+                }
+                else{
+                    listener?.invoke()
+                }
             }
-            else return
-        }
     }
 
-    private fun isCardStillPresent():Boolean{
-        val apdu = byteArrayOf(0x00,0xA4.toByte(),0x00,0x0C,0x02,0x03,0xFF.toByte())
-        val resp = sendCommandToSAM(DeviceSlot.NFC,apdu)
-        val ret:Boolean
-        if(resp == null || resp.size<=2){
-            closeNFC()
-            closeReader()
-            openReader()
-            openNFC()
-            ret = false
+    fun waitCardRemove(){
+        while (true) {
+            Log.d("READER_LIB", "Esperando cartão ser removido...")
+            val ret = reader!!.SCardTransmit(0, APDUs.WAIT_REMOVE)
+            if (ret.size <= 2) {
+                isCardPresent = false
+                startReading()
+            }
+            try {
+                Thread.sleep(20)
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
+            }
+
         }
-        else ret = true
-        return ret
     }
 }
