@@ -1,5 +1,6 @@
 package br.com.autopass.vegastps530.legacy;
 import android.content.Context;
+import android.util.Log;
 import br.com.autopass.vegastps530.legacy.CONST;
 import br.com.autopass.vegastps530.legacy.CWRAPPER;
 import br.com.autopass.vegastps530.legacy.VSC_ADPCOMM;
@@ -14,6 +15,21 @@ public class VSC_COMM extends CWRAPPER
         this.ctx = ctx;
     }
 
+    public byte[] newSCardTransmit(short deviceID, byte[] pApdu)
+    {
+        byte[] panswer = new byte[512];
+        byte[] sw = new byte[2];
+        int res = VL_ScardTransmit(deviceID, pApdu, pApdu.length,
+                panswer, sw);
+        if(res >= 0)
+        {
+            byte[] retarray = new byte[res + 2];
+            System.arraycopy(panswer, 0, retarray, 0, res);
+            System.arraycopy(sw, 0, retarray, res, 2);
+            return retarray;
+        }
+        return new byte[0];
+    }
 
     public int VL_ScardTransmit(short deviceID, byte[] pApdu, int szApdu,
                                 byte[] pAnswer, byte[] sw) {

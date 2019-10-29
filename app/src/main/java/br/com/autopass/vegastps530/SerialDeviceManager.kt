@@ -25,7 +25,6 @@ class SerialDeviceManager private constructor(context: Context) {
 
     companion object : SingletonHolder<SerialDeviceManager, Context>(::SerialDeviceManager)
 
-    private val HEX_CHARS = "0123456789ABCDEF"
     private var reader: Reader? = null
     private lateinit var disposable: Disposable
     var listener: (()->Unit)? = null
@@ -58,12 +57,9 @@ class SerialDeviceManager private constructor(context: Context) {
     }
 
     private fun waitCard() {
-        val pAnswer = ByteArray(255)
-        val sw = ByteArray(2)
-        val ret = comm!!.VL_ScardTransmit(0,APDUs.ATR,APDUs.ATR.size,pAnswer,sw)
-        //val ret = reader!!.SCardTransmit(0, APDUs.ATR)
-        Log.d("READER_LIB", "Wait card sw = ${sw.toHexString()}, resp = ${pAnswer.toHexString()}")
-        if (pAnswer.size >= 5) {
+        val ret = comm!!.newSCardTransmit(0, APDUs.ATR)
+        Log.d("READER_LIB", "Wait card ret = ${ret.toHexString()}, size = ${ret.size}")
+        if (ret.size >= 5) {
             isCardPresent = true
             val atq = ByteArray(3)
             System.arraycopy(ret, 0, atq, 0, atq.size)
@@ -72,18 +68,14 @@ class SerialDeviceManager private constructor(context: Context) {
     }
 
     fun readCardSerialNumber(): ByteArray {
-        val pAnswer = ByteArray(255)
-        val sw = ByteArray(2)
-        val ret = comm!!.VL_ScardTransmit(0,APDUs.SELECT_FILE_2FF7,APDUs.SELECT_FILE_2FF7.size,pAnswer,sw)
-        //var answer = reader!!.SCardTransmit(0, APDUs.SELECT_FILE_2FF7)
-        Log.d("READER_LIB", "Select file 2FF7 answer = ${pAnswer.toHexString()}")
-        if (isAnswerOk(sw)){
-            val ret = comm!!.VL_ScardTransmit(0,APDUs.READ_FILE,APDUs.READ_FILE.size,pAnswer,sw)
-            //answer = reader!!.SCardTransmit(0, APDUs.READ_FILE)
-            Log.d("READER_LIB", "Read file 2FF7 answer = ${pAnswer.toHexString()}")
-            if(isAnswerOk(sw)){
+        var answer = comm!!.newSCardTransmit(0, APDUs.SELECT_FILE_2FF7)
+        Log.d("READER_LIB", "Select file 2FF7 answer = ${answer.toHexString()}")
+        if (isAnswerOk(answer)){
+            answer = comm!!.newSCardTransmit(0, APDUs.READ_FILE)
+            Log.d("READER_LIB", "Read file 2FF7 answer = ${answer.toHexString()}")
+            if(isAnswerOk(answer)){
                 val resp = ByteArray(4)
-                System.arraycopy(pAnswer, 17, resp, 0, 4)
+                System.arraycopy(answer, 17, resp, 0, 4)
                 return resp
             }
         }
@@ -100,17 +92,6 @@ class SerialDeviceManager private constructor(context: Context) {
 
     private fun isAnswerOk(array: ByteArray):Boolean{
         return verifySW(array) == "9000"
-    }
-
-    fun String.hexStringToByteArray(): ByteArray {
-        val result = ByteArray(length / 2)
-        for (i in 0 until length step 2) {
-            val firstIndex = HEX_CHARS.indexOf(this[i])
-            val secondIndex = HEX_CHARS.indexOf(this[i + 1])
-            val octet = firstIndex.shl(4).or(secondIndex)
-            result[i.shr(1)] = octet.toByte()
-        }
-        return result
     }
 
     fun ByteArray.toHexString() : String {
@@ -136,13 +117,10 @@ class SerialDeviceManager private constructor(context: Context) {
     }
 
     fun waitCardRemove(){
-        val pAnswer = ByteArray(255)
-        val sw = ByteArray(2)
         while (true) {
-            val ret = comm!!.VL_ScardTransmit(0,APDUs.WAIT_REMOVE,APDUs.WAIT_REMOVE.size,pAnswer,sw)
-            //val ret = reader!!.SCardTransmit(0, APDUs.WAIT_REMOVE)
-            Log.d("READER_LIB", "Esperando cartão ser removido. Ret = ${pAnswer.toHexString()} size = ${pAnswer.size}")
-            if (pAnswer.size <= 2) {
+            val answer = comm!!.newSCardTransmit(0, APDUs.WAIT_REMOVE)
+            Log.d("READER_LIB", "Esperando cartão ser removido. Ret = ${answer.toHexString()} size = ${answer.size}")
+            if (answer.size <= 2) {
                 isCardPresent = false
                 startReading()
                 return
