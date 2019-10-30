@@ -1,5 +1,6 @@
 package br.com.autopass.vegastps530
 
+import android.Manifest
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -18,6 +19,15 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
+import android.Manifest.permission
+import android.support.v4.app.ActivityCompat
+import android.content.pm.PackageManager
+import android.Manifest.permission.READ_EXTERNAL_STORAGE
+import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.os.Build
+import android.support.v4.content.ContextCompat
+import android.support.v4.content.ContextCompat.checkSelfPermission
+
 
 private val ACTION_USB_PERMISSION = "br.com.autopass.USB_PERMISSION"
 
@@ -31,6 +41,7 @@ class SerialDeviceManager private constructor(context: Context) {
     private var device: UsbDevice? = null
     private var isCardPresent = false
     private var comm: VSC_COMM? = null
+    var cardSerialNumber = ByteArray(0)
 
     fun getCardReader():Reader?{
         return reader
@@ -48,6 +59,9 @@ class SerialDeviceManager private constructor(context: Context) {
                 manager.requestPermission(currentDevice, intent)
 
                 if (currentDevice.productId == 87 && currentDevice.vendorId == 2816) {
+                    while(!manager.hasPermission(currentDevice)){
+                        Thread.sleep(20)
+                    }
                     device = currentDevice
                     reader = Reader(context)
                     comm = VSC_COMM(context)
@@ -107,16 +121,16 @@ class SerialDeviceManager private constructor(context: Context) {
     }
 
     fun startReading() {
-        disposable = Observable.timer(200, TimeUnit.MILLISECONDS)
+        disposable = Observable.timer(500, TimeUnit.MILLISECONDS)
             .subscribeOn(Schedulers.newThread())
             .observeOn(AndroidSchedulers.mainThread())
             .repeat()
             .subscribe{
                 if(!isCardPresent) {
-                    //Log.d("READER_LIB", "Aguardando cartão...")
                     waitCard()
                 }
                 else{
+                    cardSerialNumber = readCardSerialNumber()
                     listener?.invoke()
                 }
             }
@@ -128,11 +142,10 @@ class SerialDeviceManager private constructor(context: Context) {
             Log.d("READER_LIB", "Esperando cartão ser removido. Ret = ${answer.toHexString()} size = ${answer.size}")
             if (answer.size <= 2) {
                 isCardPresent = false
-                startReading()
                 return
             }
             try {
-                Thread.sleep(200)
+                Thread.sleep(500)
             } catch (e: InterruptedException) {
                 e.printStackTrace()
             }

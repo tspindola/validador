@@ -1,6 +1,7 @@
 package br.com.autopass.vegastps530
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import br.com.autopass.vegastps530.cardblocks.*
 import br.com.autopass.vegastps530.legacy.CONST
@@ -46,7 +47,7 @@ class CardFunctions(ctx: Context, serial:ByteArray){
         return BitmapBlock(readBlockFromCard(Constants.CARD_BITMAP_BLOCK,1))
     }
 
-    fun writeBitmapBlock(bitmapBlock: StatusBlock):Int{
+    fun writeBitmapBlock(bitmapBlock: BitmapBlock):Int{
         return writeBlockToCard(bitmapBlock.toBinaryString(),Constants.CARD_BITMAP_BLOCK,1)
     }
 
@@ -128,7 +129,9 @@ class CardFunctions(ctx: Context, serial:ByteArray){
 
     private fun writeBlockToCard(value:String,block:Byte, blocksize: Int):Int{
         val blockBytes = blockStringToByteArray(value, blocksize)
-        return vl.VL4MIF_Write(block,blocksize.toByte(),blockBytes)
+        val ret = vl.VL4MIF_Write(block,blocksize.toByte(),blockBytes)
+        Log.d("READER_LIB", "Write block $block with value = ${byteArrayToBlockString(blockBytes,blocksize)} Result: $ret")
+        return ret
     }
 
     private fun readBlockFromCard(block:Byte, blocksize: Int):String{
